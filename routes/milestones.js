@@ -46,10 +46,6 @@ router.get("/project/:projectId", authenticateToken, async (req, res) => {
 
 // Create milestone (civil engineer only)
 router.post("/", authenticateToken, async (req, res) => {
-  if (req.user.user_type !== 'worker' || req.user.sub_user_type !== 'civil_engineer') {
-    return res.status(403).json({ error: "Only civil engineers can create milestones" });
-  }
-
   try {
     const { project_id, title, description, target_date } = req.body;
     const db = await dbPromise;
