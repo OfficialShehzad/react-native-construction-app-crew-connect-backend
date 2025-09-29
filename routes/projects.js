@@ -180,7 +180,7 @@ router.get("/available-engineers", authenticateToken, async (req, res) => {
     const db = await dbPromise;
     const engineers = await db.all(
       `SELECT id, username, email FROM users 
-       WHERE user_type = 'worker' AND sub_user_type = 'civil_engineer'`
+       WHERE user_type = 'worker' AND sub_user_type = 'civil_engineer' and is_available = 1`
     );
     res.json(engineers);
   } catch (error) {
@@ -206,7 +206,7 @@ router.post("/:id/request-worker", authenticateToken, async (req, res) => {
 
     // Check if worker is available
     const worker = await db.get(
-      "SELECT * FROM users WHERE id = ? AND user_type = 'worker' AND sub_user_type = 'civil_engineer'",
+      "SELECT * FROM users WHERE id = ? AND user_type = 'worker' AND sub_user_type = 'civil_engineer' AND is_available = 1",
       worker_id
     );
     

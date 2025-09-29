@@ -75,10 +75,10 @@ router.put("/requests/:id/respond", authenticateToken, async (req, res) => {
         );
         
         // Mark worker as unavailable
-        // await db.run(
-        //   "UPDATE users SET is_available = 0 WHERE id = ?",
-        //   req.user.id
-        // );
+        await db.run(
+          "UPDATE users SET is_available = 0 WHERE id = ?",
+          req.user.id
+        );
       }
 
       await db.run("COMMIT");
@@ -91,6 +91,20 @@ router.put("/requests/:id/respond", authenticateToken, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// Get the user's sent request
+router.get("/worker_requests", authenticateToken, async (req, res) => {
+  try {
+    const db = await dbPromise;
+    const requests = await db.all(
+      `SELECT * FROM worker_requests WHERE requested_by = ?`,
+      req.user.id
+    );
+    res.json(requests);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+})
 
 // Get available workers (for civil engineers to assign)
 router.get("/available", authenticateToken, async (req, res) => {

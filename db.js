@@ -145,19 +145,12 @@ async function initDB() {
   // Migrate existing plan_image_url to plan_image if needed
   try {
     await db.exec(`
-      ALTER TABLE projects ADD COLUMN plan_image BLOB;
+      ALTER TABLE users ADD COLUMN is_available BOOLEAN DEFAULT 1;
     `);
   } catch (error) {
     // Column might already exist, ignore error
   }
 
-  try {
-    await db.exec(`
-      ALTER TABLE projects ADD COLUMN plan_image_type TEXT;
-    `);
-  } catch (error) {
-    // Column might already exist, ignore error
-  }
 }
 
 initDB();
