@@ -75,9 +75,9 @@ router.post("/", authenticateToken, async (req, res) => {
 
 // Update milestone (civil engineer only)
 router.put("/:id", authenticateToken, async (req, res) => {
-  if (req.user.user_type !== 'worker' || req.user.sub_user_type !== 'civil_engineer') {
-    return res.status(403).json({ error: "Only civil engineers can update milestones" });
-  }
+  // if (req.user.user_type !== 'worker' || req.user.sub_user_type !== 'civil_engineer') {
+  //   return res.status(403).json({ error: "Only civil engineers can update milestones" });
+  // }
 
   try {
     const { title, description, target_date, status, completion_date } = req.body;
@@ -114,9 +114,9 @@ router.put("/:id", authenticateToken, async (req, res) => {
 
 // Delete milestone (civil engineer only)
 router.delete("/:id", authenticateToken, async (req, res) => {
-  if (req.user.user_type !== 'worker' || req.user.sub_user_type !== 'civil_engineer') {
-    return res.status(403).json({ error: "Only civil engineers can delete milestones" });
-  }
+  // if (req.user.user_type !== 'worker' || req.user.sub_user_type !== 'civil_engineer') {
+  //   return res.status(403).json({ error: "Only civil engineers can delete milestones" });
+  // }
 
   try {
     const db = await dbPromise;
@@ -145,9 +145,9 @@ router.delete("/:id", authenticateToken, async (req, res) => {
 
 // Mark milestone as completed
 router.put("/:id/complete", authenticateToken, async (req, res) => {
-  if (req.user.user_type !== 'worker' || req.user.sub_user_type !== 'civil_engineer') {
-    return res.status(403).json({ error: "Only civil engineers can complete milestones" });
-  }
+  // if (req.user.user_type !== 'worker' || req.user.sub_user_type !== 'civil_engineer') {
+  //   return res.status(403).json({ error: "Only civil engineers can complete milestones" });
+  // }
 
   try {
     const db = await dbPromise;
