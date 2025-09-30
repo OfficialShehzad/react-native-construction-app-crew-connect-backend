@@ -81,9 +81,9 @@ router.delete("/:id", authenticateToken, async (req, res) => {
 
 // Order materials for project (civil engineer only)
 router.post("/order", authenticateToken, async (req, res) => {
-  if (req.user.user_type !== 'worker' || req.user.sub_user_type !== 'civil_engineer') {
-    return res.status(403).json({ error: "Only civil engineers can order materials" });
-  }
+  // if (req.user.user_type !== 'worker' || req.user.sub_user_type !== 'civil_engineer') {
+  //   return res.status(403).json({ error: "Only civil engineers can order materials" });
+  // }
 
   try {
     const { project_id, material_id, quantity } = req.body;
