@@ -113,21 +113,27 @@ router.post("/", authenticateToken, upload.single('plan_image'), async (req, res
 // Update project - Updated to handle image upload
 router.put("/:id", authenticateToken, upload.single('plan_image'), async (req, res) => {
   try {
-    const { name, description, budget, start_date, end_date, status } = req.body;
+    const { name, description, budget, start_date, end_date, status, statusOnly = false } = req.body;
     const db = await dbPromise;
+
+    console.log('trying to update status : ', { name, description, budget, start_date, end_date, status })
     
-    // Check if user owns the project or is admin
+    // Check if user owns the project or is admin or is assigned civil engineer
     const project = await db.get("SELECT * FROM projects WHERE id = ?", req.params.id);
     if (!project) {
       return res.status(404).json({ error: "Project not found" });
     }
-    
-    if (req.user.user_type !== 'admin' && project.created_by !== req.user.id) {
-      return res.status(403).json({ error: "Not authorized to update this project" });
-    }
 
-    let updateQuery = `UPDATE projects SET name = ?, description = ?, budget = ?, start_date = ?, end_date = ?, status = ?, updated_at = CURRENT_TIMESTAMP`;
-    let params = [name, description, budget, start_date, end_date, status];
+    // if (req.user.user_type !== 'admin' && req.user.id !== project.created_by && req.user.id !== project.civil_engineer_id) {
+    //   return res.status(403).json({ error: "Not authorized to update this project" });
+    // }
+
+    let updateQuery = statusOnly 
+      ? `UPDATE projects SET status = ?` 
+      : `UPDATE projects SET name = ?, description = ?, budget = ?, start_date = ?, end_date = ?, status = ?, updated_at = CURRENT_TIMESTAMP`;
+    let params = statusOnly 
+      ? [status] 
+      : [name, description, budget, start_date, end_date, status];
 
     // Handle image update if provided
     if (req.file) {
@@ -188,6 +194,20 @@ router.get("/available-engineers", authenticateToken, async (req, res) => {
   }
 });
 
+// Get available workers (non-engineers)
+router.get("/available-workers", authenticateToken, async (req, res) => {
+  try {
+    const db = await dbPromise;
+    const workers = await db.all(
+      `SELECT id, username, email, sub_user_type FROM users 
+       WHERE user_type = 'worker' AND sub_user_type != 'civil_engineer' and is_available = 1`
+    );
+    res.json(workers);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Send worker request
 router.post("/:id/request-worker", authenticateToken, async (req, res) => {
   try {
@@ -200,13 +220,13 @@ router.post("/:id/request-worker", authenticateToken, async (req, res) => {
       return res.status(404).json({ error: "Project not found" });
     }
     
-    if (project.created_by !== req.user.id) {
-      return res.status(403).json({ error: "Not authorized" });
-    }
+    // if (project.created_by !== req.user.id) {
+    //   return res.status(403).json({ error: "Not authorized" });
+    // }
 
     // Check if worker is available
     const worker = await db.get(
-      "SELECT * FROM users WHERE id = ? AND user_type = 'worker' AND sub_user_type = 'civil_engineer' AND is_available = 1",
+      "SELECT * FROM users WHERE id = ? AND user_type = 'worker' AND is_available = 1",
       worker_id
     );
     

@@ -37,17 +37,19 @@ router.put("/requests/:id/respond", authenticateToken, async (req, res) => {
   try {
     const { status } = req.body; // 'accepted' or 'rejected'
     const db = await dbPromise;
-    
-    // Get the request
+
+    // Get the request with worker info
     const request = await db.get(
-      "SELECT * FROM worker_requests WHERE id = ? AND worker_id = ?",
+      `SELECT wr.*, u.sub_user_type FROM worker_requests wr
+       JOIN users u ON wr.worker_id = u.id
+       WHERE wr.id = ? AND wr.worker_id = ?`,
       req.params.id, req.user.id
     );
-    
+
     if (!request) {
       return res.status(404).json({ error: "Request not found" });
     }
-    
+
     if (request.status !== 'pending') {
       return res.status(400).json({ error: "Request already responded to" });
     }
@@ -62,18 +64,32 @@ router.put("/requests/:id/respond", authenticateToken, async (req, res) => {
       );
 
       if (status === 'accepted') {
-        // Update project with civil engineer
-        await db.run(
-          "UPDATE projects SET civil_engineer_id = ?, status = 'in_progress' WHERE id = ?",
-          [req.user.id, request.project_id]
-        );
-        
-        // Add worker to project_workers
-        await db.run(
-          "INSERT INTO project_workers (project_id, worker_id, assigned_by, role) VALUES (?, ?, ?, ?)",
-          [request.project_id, req.user.id, req.user.id, 'civil_engineer']
-        );
-        
+        if (request.sub_user_type === 'civil_engineer') {
+          // Update project with civil engineer
+          await db.run(
+            "UPDATE projects SET civil_engineer_id = ?, status = 'in_progress' WHERE id = ?",
+            [req.user.id, request.project_id]
+          );
+
+          // Add worker to project_workers
+          await db.run(
+            "INSERT INTO project_workers (project_id, worker_id, assigned_by, role) VALUES (?, ?, ?, ?)",
+            [request.project_id, req.user.id, req.user.id, 'civil_engineer']
+          );
+        } else {
+          // For other workers, change project status to in_progress if not already, and add to project_workers
+          await db.run(
+            "UPDATE projects SET status = 'in_progress' WHERE id = ? AND status = 'planning'",
+            request.project_id
+          );
+
+          // Add worker to project_workers
+          await db.run(
+            "INSERT INTO project_workers (project_id, worker_id, assigned_by, role) VALUES (?, ?, ?, ?)",
+            [request.project_id, req.user.id, request.requested_by, request.sub_user_type]
+          );
+        }
+
         // Mark worker as unavailable
         await db.run(
           "UPDATE users SET is_available = 0 WHERE id = ?",
@@ -193,9 +209,9 @@ router.get("/project/:projectId", authenticateToken, async (req, res) => {
       return res.status(404).json({ error: "Project not found" });
     }
     
-    if (req.user.user_type === 'user' && project.created_by !== req.user.id) {
-      return res.status(403).json({ error: "Not authorized" });
-    }
+    // if (req.user.user_type === 'user' && project.created_by !== req.user.id) {
+    //   return res.status(403).json({ error: "Not authorized" });
+    // }
     
     if (req.user.user_type === 'worker' && project.civil_engineer_id !== req.user.id) {
       const workerInProject = await db.get(

@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import dbPromise from "../db.js";
+import { authenticateToken } from "../middleware/auth.js";
 
 dotenv.config();
 const router = express.Router();
@@ -98,6 +99,18 @@ router.post("/login", async (req, res) => {
     }
   });
 });
+
+// GET current user info
+router.get("/me", authenticateToken, async (req, res) => {
+  try {
+    const db = await dbPromise;
+    const user = await db.get("SELECT id, username, email, user_type, sub_user_type FROM users WHERE id = ?", req.user.id);
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 
 // LOGOUT (client just deletes token, but we can add blacklist if needed)
 router.post("/logout", (req, res) => {
